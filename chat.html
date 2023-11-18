@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    
+</head>
+<body>
+
+    <h2>Users:</h2>
+    <ul id="mapList"></ul>
+
+
+    
+    <div>
+        <h2>Private Chat</h2>
+        <form id="initiate-form">
+          <label for="recipientId">Recipient Socket.IO ID:</label>
+          <input id="recipientId" autocomplete="off" />
+          <button>Initiate Chat</button>
+        </form>
+        <div id="chat-container" style="display: none;">
+          <ul id="messages"></ul>
+          <form id="form" action="">
+            <label for="m">Message:</label>
+            <input id="m" autocomplete="off" placeholder="Type your message..." />
+            <button id="send-btn">Send</button>
+          </form>
+        </div>
+      </div>
+    
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+                fetch('/getData')
+                .then(response => response.json())
+                .then(data => {
+                // Display the map in the HTML
+
+                // Get the <ul> element with the id 'mapList'
+                const mapList = document.getElementById('mapList');
+
+                // Loop through each key-value pair in the 'data' object
+                for (const key in data.data) {
+                    if (data.data.hasOwnProperty(key)) {
+                    // Create a new <li> element
+                    const listItem = document.createElement('li');
+
+                    // Set the text content of the <li> element to key: value
+                    listItem.textContent = `${key}`;
+
+                    // Append the <li> element to the <ul> element
+                    mapList.appendChild(listItem);
+                    }
+                }
+                })
+                .catch(error => console.error('Error fetching data:', error));
+
+        });
+
+        //
+        //
+        $(function () { 
+            var socket = io();
+
+            $('#initiate-form').submit(function(){
+                const recipientId = $('#recipientId').val();
+                console.log(recipientId);
+                socket.emit('initiateChat', { recipientId });
+                $('#chat-container').show();
+                return false;
+            });
+
+            $('form').submit(function(){
+                const message = $('#m').val();
+                const recipientId = $('#recipientId').val();
+                console.log("msg: "+message+" rid: "+recipientId);
+                socket.emit('privateChatMessage', { recipientId, message });
+                $('#m').val('');
+                return false;
+            });
+
+            socket.on('chatRequest', function(data){
+                $('#recipientId').val(data.senderId);
+                console.log("inside chatrequest:: data: "+data);
+            });
+
+            socket.on('privateChatMessage', function(data){
+                $('#messages').append($('<li>').text(data.senderId + ': ' + data.message));
+                // Scroll to the bottom of the chat container
+                $('#messages').scrollTop($('#messages')[0].scrollHeight);
+            });
+        });
+        //
+        //
+
+
+    </script>
+</body>
+</html>
